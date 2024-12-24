@@ -1,15 +1,13 @@
 // Proyecto que convierte entre dólares y pesos mexicanos, argentinos y colombianos
 // Utiliza la API de ExchangeRate-API para obtener las tasas de cambio
+// Requiere un archivo de propiedades llamado config.properties con la API key
 
-import com.google.gson.annotations.SerializedName;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -29,56 +27,115 @@ public class Main {
         } catch (IOException e) {
             throw new RuntimeException("Error al cargar el archivo de propiedades: " + e.getMessage());
         }
-        
+
         // Conexión a la API de ExchangeRate
-        String apiKey = properties.getProperty("api_key");	
-        URI url = URI.create("https://v6.exchangerate-api.com/v6/"+apiKey+"/latest/USD");
+        String apiKey = properties.getProperty("api_key");
+        URI url = URI.create("https://v6.exchangerate-api.com/v6/" + apiKey + "/latest/USD");
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder().uri(url).build();
         HttpResponse<String> response = null;
+        int statusCode = 0;
+        ExchangeRate exchangeRateJson = null;
 
+        try {
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // System.out.println("Respuesta cruda de la API: " + response.body());
+            statusCode = response.statusCode();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar la API: " + e.getMessage());
+        }
+
+        Gson gson = new Gson();
+
+        if (statusCode == HttpURLConnection.HTTP_OK) {
             try {
-                response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                System.out.println("Respuesta cruda de la API: " + response.body());
-            } catch (Exception e) {
-                throw new RuntimeException("Error al obtener las tasas de cambio: " + e.getMessage());
+                exchangeRateJson = gson.fromJson(response.body(), ExchangeRate.class);
+            } catch (JsonSyntaxException e) {
+                throw new RuntimeException("Error al convertir la respuesta JSON: " + e.getMessage());
             }
-
-            Gson gson = new Gson();
+        } else {
+            throw new RuntimeException("Error al consultar la API: " + response.body());
+        }
 
         // Interacción con el usuario
         Scanner teclado = new Scanner(System.in);
         double cantidad = 0;
-        String menu = """
-                 \n                 
-                 Bienvenido al Conversor de Monedas \n
-                 1 - Dolar => Peso Mexicano
-                 2 - Peso Mexicano => Dolar
-                 3 - Dolar => Peso Argentino
-                 4 - Peso Argentino => Dolar
-                 5 - Dolar => Peso Colombiano
-                 6 - Peso Colombiano => Dolar 
-                 7 - Salir
-                """;
 
         while (opcion != 7) {
-            System.out.println(menu);
+            imprimirMenu();
+            System.out.println("Seleccione una opción:");
             while (!teclado.hasNextInt()) {
-                System.out.println("Por favor, ingrese un número válido para la opción.");
-                teclado.next(); // Limpiamos el buffer de entrada
+                System.out.println("Por favor, ingrese un número de opción válido");
+                teclado.next();
             }
+
             opcion = teclado.nextInt();
 
             if (opcion >= 1 && opcion <= 6) {
-                System.out.println("Ingrese la cantidad:");
+                System.out.println("\nIngrese la cantidad a convertir:");
                 while (!teclado.hasNextDouble()) {
-                    System.out.println("Por favor, ingrese un número válido para la cantidad.");
-                    teclado.next(); // Limpiamos el buffer de entrada
+                    System.out.println("Por favor, ingrese una cantidad válida");
+                    teclado.next();
                 }
                 cantidad = teclado.nextDouble();
+            }
+
+            switch (opcion) {
+                case 1:
+                    cambio = exchangeRateJson.getConversionRates().get("MXN");
+                    System.out.printf("\nLa cantidad de %.2f USD en Pesos Mexicanos es: %.2f\n", cantidad,
+                            cantidad * cambio);
+                    break;
+                case 2:
+                    cambio = exchangeRateJson.getConversionRates().get("MXN");
+                    System.out.printf("\nLa cantidad de %.2f Pesos Mexicanos en USD es: %.2f\n", cantidad,
+                            cantidad / cambio);
+                    break;
+                case 3:
+                    cambio = exchangeRateJson.getConversionRates().get("ARS");
+                    System.out.printf("\nLa cantidad de %.2f USD en Pesos Argentinos es: %.2f\n", cantidad,
+                            cantidad * cambio);
+                    break;
+                case 4:
+                    cambio = exchangeRateJson.getConversionRates().get("ARS");
+                    System.out.printf("\nLa cantidad de %.2f Pesos Argentinos en USD es: %.2f\n", cantidad,
+                            cantidad / cambio);
+                    break;
+                case 5:
+                    cambio = exchangeRateJson.getConversionRates().get("COP");
+                    System.out.printf("\nLa cantidad de %.2f USD en Pesos Colombianos es: %.2f\n", cantidad,
+                            cantidad * cambio);
+                    break;
+                case 6:
+                    cambio = exchangeRateJson.getConversionRates().get("COP");
+                    System.out.printf("\nLa cantidad de %.2f Pesos Colombianos en USD es: %.2f\n", cantidad,
+                            cantidad / cambio);
+                    break;
+                case 7:
+                    System.out.println("\nGracias por utilizar el Conversor de Monedas");
+                    break;
+                default:
+                    System.out.println("\nOpción no válida");
             }
         }
 
         teclado.close();
+    }
+
+    public static void imprimirMenu() {
+        System.out.println("""
+                \n======================================
+                *** Elaborado por: Alfonso Enriquez ***
+                ======================================
+                \nBienvenido al Conversor de Monedas\n
+                1 - Dolar => Peso Mexicano
+                2 - Peso Mexicano => Dolar
+                3 - Dolar => Peso Argentino
+                4 - Peso Argentino => Dolar
+                5 - Dolar => Peso Colombiano
+                6 - Peso Colombiano => Dolar
+                7 - Salir\n
+                ======================================
+                """);
     }
 }
