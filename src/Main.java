@@ -17,45 +17,11 @@ import com.google.gson.JsonSyntaxException;
 
 public class Main {
     public static void main(String[] args) {
+        ExchangeRate exchangeRateJson = null;
         int opcion = 0;
         double cambio = 0;
 
-        // Cargar la API key desde el archivo de propiedades
-        Properties properties = new Properties();
-        try (FileInputStream input = new FileInputStream("config.properties")) {
-            properties.load(input);
-        } catch (IOException e) {
-            throw new RuntimeException("Error al cargar el archivo de propiedades: " + e.getMessage());
-        }
-
-        // Conexión a la API de ExchangeRate
-        String apiKey = properties.getProperty("api_key");
-        URI url = URI.create("https://v6.exchangerate-api.com/v6/" + apiKey + "/latest/USD");
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(url).build();
-        HttpResponse<String> response = null;
-        int statusCode = 0;
-        ExchangeRate exchangeRateJson = null;
-
-        try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            // System.out.println("Respuesta cruda de la API: " + response.body());
-            statusCode = response.statusCode();
-        } catch (Exception e) {
-            throw new RuntimeException("Error al consultar la API: " + e.getMessage());
-        }
-
-        Gson gson = new Gson();
-
-        if (statusCode == HttpURLConnection.HTTP_OK) {
-            try {
-                exchangeRateJson = gson.fromJson(response.body(), ExchangeRate.class);
-            } catch (JsonSyntaxException e) {
-                throw new RuntimeException("Error al convertir la respuesta JSON: " + e.getMessage());
-            }
-        } else {
-            throw new RuntimeException("Error al consultar la API: " + response.body());
-        }
+        exchangeRateJson = iniciarAPI();
 
         // Interacción con el usuario
         Scanner teclado = new Scanner(System.in);
@@ -112,21 +78,59 @@ public class Main {
                             cantidad / cambio);
                     break;
                 case 7:
-                    System.out.println("\nGracias por utilizar el Conversor de Monedas");
+                    System.out.println("\nGracias por utilizar el Conversor de Monedas\n");
                     break;
                 default:
-                    System.out.println("\nOpción no válida");
+                    System.out.println("\nOpción no válida\n");
             }
         }
 
         teclado.close();
     }
 
+    public static ExchangeRate iniciarAPI() {
+        // Cargar la API key desde el archivo de propiedades
+        Properties properties = new Properties();
+        try (FileInputStream input = new FileInputStream("config.properties")) {
+            properties.load(input);
+        } catch (IOException e) {
+            throw new RuntimeException("Error al cargar el archivo de propiedades: " + e.getMessage());
+        }
+
+        // Conexión a la API de ExchangeRate
+        String apiKey = properties.getProperty("api_key");
+        URI url = URI.create("https://v6.exchangerate-api.com/v6/" + apiKey + "/latest/USD");
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder().uri(url).build();
+        HttpResponse<String> response = null;
+        int statusCode = 0;
+
+        try {
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // System.out.println("Respuesta cruda de la API: " + response.body());
+            statusCode = response.statusCode();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar la API: " + e.getMessage());
+        }
+
+        Gson gson = new Gson();
+
+        if (statusCode == HttpURLConnection.HTTP_OK) {
+            try {
+                return gson.fromJson(response.body(), ExchangeRate.class);
+            } catch (JsonSyntaxException e) {
+                throw new RuntimeException("Error al convertir la respuesta JSON: " + e.getMessage());
+            }
+        } else {
+            throw new RuntimeException("Error al consultar la API: " + response.body());
+        }
+    }
+    
     public static void imprimirMenu() {
         System.out.println("""
-                \n======================================
+                \n=======================================
                 *** Elaborado por: Alfonso Enriquez ***
-                ======================================
+                =======================================
                 \nBienvenido al Conversor de Monedas\n
                 1 - Dolar => Peso Mexicano
                 2 - Peso Mexicano => Dolar

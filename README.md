@@ -8,7 +8,7 @@ Este código en Java consulta una API de tasas de cambio, procesa la respuesta J
 
 Para obtener tu clave, es necesario realizar un registro inicial ingresando tu correo electrónico en la página oficial de [Exchange Rate API](https://www.exchangerate-api.com/). Después de esto, recibirás una clave en el correo electrónico proporcionado y estará lista para su uso.
 
-> ⚠️ Colocar la clave del API en el archivo `config_ejemplo.properties` en el campo `api_key`. Finalmente, modificar el nombre del archivo por `config.properties` para su correcto funcionamiento.
+> ⚠️ Colocar la clave del API en el archivo **`config_ejemplo.properties`** en el campo **`api_key`**. Finalmente, modificar el nombre del archivo por **`config.properties`** para su correcto funcionamiento.
 
 ## Estructura del proyecto
 
